@@ -43,7 +43,7 @@ class CalOnline:
         response.raise_for_status()
         self.login_token = response.json().get("token")
 
-    def get_user_details(self):
+    def get_credit_cards(self):
         headers = self.get_headers({
             'Authorization': f'CALAuthScheme {self.login_token}',
             'Origin': f'{self.BASE_URL}',
@@ -62,8 +62,7 @@ class CalOnline:
         response.raise_for_status()
         json_data = response.json()
 
-        for card_details in json_data.get("result", {}).get("cards", []):
-            self.get_card_transactions(card_details["cardUniqueId"], 5, 2023)
+        return json_data.get("result", {}).get("cards", [])
         
     def get_card_transactions(self, card_id, month, year):
         headers = self.get_headers({
@@ -98,7 +97,9 @@ def main():
     username = getpass("Enter your username: ")
     password = getpass("Enter your password: ")
     co.cal_login(username, password)
-    co.get_user_details()
+    ccs = co.get_credit_cards()
+    for cc in ccs:
+        co.get_card_transactions(cc["cardUniqueId"], 5, 2023)
     
 if __name__ == "__main__":
     main()
