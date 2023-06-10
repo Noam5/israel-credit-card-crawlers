@@ -5,7 +5,9 @@ from pprint import pprint
 from getpass import getpass
 from fake_useragent import UserAgent
 
-class CalOnline:
+from common import CardProvider, CreditCard
+
+class CalOnline(CardProvider):
     BASE_URL = 'https://api.cal-online.co.il'
     SITE_ID = '09031987-273E-2311-906C-8AF85B17C8D9'
     
@@ -26,7 +28,7 @@ class CalOnline:
             headers.update(additional_headers)
         return headers
 
-    def cal_login(self, username, password):
+    def login(self, username, password, cardsixdigits=None):
         headers = self.get_headers({
             'Origin': f'{self.BASE_URL}',
             'Referer': f'{self.BASE_URL}/',
@@ -62,6 +64,14 @@ class CalOnline:
         response.raise_for_status()
         json_data = response.json()
 
+        cards = []
+        for card in json_data.get("result", {}).get("cards", []):
+            cards.append(
+                    CreditCard(card_id=card["cardUniqueId"], last4digits=card["last4Digits"], innerdata=card)
+            )
+
+        return cards
+    
         return json_data.get("result", {}).get("cards", [])
         
     def get_card_transactions(self, card_id, month, year):
@@ -87,9 +97,14 @@ class CalOnline:
         json_result = response.json()
         assert(json_result["statusDescription"] == "הצלחה")
 
-        total_amount = json_result["result"]["bankAccounts"][0]["debitDates"][0]["totalDebits"]
-        for transaction in json_result["result"]["bankAccounts"][0]["debitDates"][0]["transactions"]:
-            pprint(transaction)
+        #total_amount = json_result["result"]["bankAccounts"][0]["debitDates"][0]["totalDebits"]
+
+        assert(len(json_result["result"]["bankAccounts"]) == 1)
+        assert(len(json_result["result"]["bankAccounts"][0]["debitDates"]) == 1)
+
+        return json_result["result"]["bankAccounts"][0]["debitDates"][0]["transactions"]
+        #for transaction in json_result["result"]["bankAccounts"][0]["debitDates"][0]["transactions"]:
+            #pprint(transaction)
         
     
 def main():
