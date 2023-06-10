@@ -56,7 +56,8 @@ password = input("Enter your password: ")
 las6digits = input("Enter last 6 digits: ")
 isracard.login(israeli_id, password, las6digits)
 cards = isracard.get_credit_cards()
-transactions = isracard.get_card_transactions(0, 5, 2023)
+for card in cards:
+   transactions = isracard.get_card_transactions(card.card_id, 5, 2023)
 ```
 
 License
