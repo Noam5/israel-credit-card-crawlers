@@ -137,9 +137,24 @@ class Isracard(CardProvider):
 
             if json_data["Header"]["Status"] == '-1':
                 return cards
+
+            card_idx_str = f"Index{card_idx}"
+            assert(json_data["CardsTransactionsListBean"][card_idx_str]["CurrentCardTransactions"][1]["txnInfo"] is None)
+
+            local_transactions_sum = 0
+            local_transactions = json_data["CardsTransactionsListBean"][card_idx_str]["CurrentCardTransactions"][0]["txnIsrael"]
+            if local_transactions is not None:
+                local_transactions_sum = float(local_transactions[-1]["paymentSum"])
+            
+            abroad_transactions_sum = 0
+            abroad_transactions = json_data["CardsTransactionsListBean"][card_idx_str]["CurrentCardTransactions"][2]["txnAbroad"]
+            if abroad_transactions is not None:
+                abroad_transactions_sum = float(abroad_transactions[-1]["paymentSumOutbound"])
+
+            total_to_date = local_transactions_sum + abroad_transactions_sum
             
             cards.append(
-                CreditCard(card_idx, json_data["CardsTransactionsListBean"]["cardNumberTail"], innerdata=json_data)
+                CreditCard(card_idx, json_data["CardsTransactionsListBean"]["cardNumberTail"], total_to_date=total_to_date, innerdata=json_data)
             )
             card_idx += 1
 

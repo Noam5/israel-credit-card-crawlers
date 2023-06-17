@@ -3,9 +3,13 @@ import requests
 import json
 from pprint import pprint
 from getpass import getpass
+import time
 from fake_useragent import UserAgent
 
 from common import CardProvider, CreditCard
+
+NUM_RETRIES = 3
+
 
 class CalOnline(CardProvider):
     BASE_URL = 'https://api.cal-online.co.il'
@@ -88,11 +92,18 @@ class CalOnline(CardProvider):
             'year': str(year),
         }
 
-        response = self.session.post(
-            f'{self.BASE_URL}/Transactions/api/transactionsDetails/getCardTransactionsDetails',
-            headers=headers,
-            json=json_data,
-        )
+        for i in range(NUM_RETRIES):
+            try:
+                response = self.session.post(
+                    f'{self.BASE_URL}/Transactions/api/transactionsDetails/getCardTransactionsDetails',
+                    headers=headers,
+                    json=json_data,
+                )
+            except ConnectionError:
+                if i == NUM_RETRIES - 1:
+                    raise
+                time.sleep(60)
+                continue
 
         json_result = response.json()
         assert(json_result["statusDescription"] == "הצלחה")
@@ -102,9 +113,7 @@ class CalOnline(CardProvider):
         assert(len(json_result["result"]["bankAccounts"]) == 1)
         assert(len(json_result["result"]["bankAccounts"][0]["debitDates"]) == 1)
 
-        return json_result["result"]["bankAccounts"][0]["debitDates"][0]["transactions"]
-        #for transaction in json_result["result"]["bankAccounts"][0]["debitDates"][0]["transactions"]:
-            #pprint(transaction)
+        return json_result["result"]["bankAccounts"][0]["debitDates"][0]
         
     
 def main():
